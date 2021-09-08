@@ -1,3 +1,30 @@
+import time
+import busio
+import digitalio
+import board
+import adafruit_mcp3xxx.mcp3008 as MCP
+from adafruit_mcp3xxx.analog_in import AnalogIn
+
+
+spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+cs = digitalio.DigitalInOut(board.D5)
+mcp = MCP.MCP3008(spi, cs)
+
+left_sel = AnalogIn(mcp, MCP.P0)
+left_y = AnalogIn(mcp, MCP.P1)
+left_x = AnalogIn(mcp, MCP.P2)
+right_sel = AnalogIn(mcp, MCP.P7)
+right_y = AnalogIn(mcp, MCP.P5)
+right_x = AnalogIn(mcp, MCP.P6)
+
+def get_input(x, y, select):
+    select_val = not bool(select.voltage)
+    inputs = {'X': x.value, 'Y': y.value, 'SELECT': select_val}
+    return inputs
+
+
+
+
 import board
 from digitalio import DigitalInOut, Direction, Pull
 import time
@@ -59,7 +86,15 @@ buttons = {'white': button_white
         ,'select': button_select}
 
 while True:
+    buttons['left_analog'] = get_input(left_x, left_y, left_sel)
+    buttons['right_analog'] = get_input(right_x, right_y, right_sel)
     for key, val in buttons.items():
-        if not val.value:
-            print(key)
+        try:
+            if not val.value:
+                print(key)
+        except AttributeError:
+            if val['X'] > 35000 or val['X'] < 30000 or val['SELECT']:
+                print(val)
+            elif val['Y'] > 35000 or val['Y'] < 30000 or val['SELECT']:
+                print(val)
     time.sleep(0.01) 
